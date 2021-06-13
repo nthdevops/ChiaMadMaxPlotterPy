@@ -14,7 +14,6 @@ plotCountEnvName = "nOfPlots"
 if not os.path.exists(thisFilePath+"\\.env"):
     open(thisFilePath+"\\.env", 'w').close()
 envConf = dotenv.dotenv_values(".env")
-print("env set")
 
 #Pega o total de cpus logicas do pc
 totalThreads = psutil.cpu_count()
@@ -22,7 +21,6 @@ totalThreads = psutil.cpu_count()
 configParserObj = configparser.ConfigParser()
 configParserObj.read("config.ini")
 config = configParserObj["CHIA"]
-print("config")
 
 #Funcao exit com wait de input
 def tExit():
@@ -109,23 +107,20 @@ def startMadMaxPlotter():
     tempDir2 = config["temp.dir"]+"plot"+plotNumber+"Temp2\\"
     createTempDir(tempDir1)
     createTempDir(tempDir2)
-    print("temps created")
 
-    commandString = '" powershell \".\chia_plot -n \''+ config["plots"]+'\' -r \''+ str(totalThreads) +'\' -t \''+ tempDir1 +'\' -2 \''+ tempDir2 +'\' -d \''+ config["final.dir"] +'\' -p \''+ config["pool.key"] +'\' -f \''+ config["farmer.key"] +'\'\"'
-    print("command set")
+    commandString = '" powershell -NoProfile -ExecutionPolicy ByPass \".\chia_plot -n \''+ config["plots"]+'\' -r \''+ str(totalThreads) +'\' -t \''+ tempDir1 +'\' -2 \''+ tempDir2 +'\' -d \''+ config["final.dir"] +'\' -p \''+ config["pool.key"] +'\' -f \''+ config["farmer.key"] +'\'\"'
+
     try:
-        print("trying")
         os.system(commandString)
     except KeyboardInterrupt:
-        print("\n\nExecução finalizada!\nAguarde enquanto o programa é finalizado!")
+        print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
     except Exception as e:
-        print("\nNão conseguiu plotar!")
+        print("\nNao conseguiu plotar!")
     else:
-        print("\nComando não foi executado!")
+        print("\nNao foi possivel executar o powershell!")
 
 def finishMadMaxPlotter():
     global plottingStarted
-    print("Finalizando")
 
     if(plottingStarted):
         plotEnv('sub')
