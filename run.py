@@ -124,7 +124,9 @@ def finishMadMaxPlotter():
         removeTempDirs()
         plottingStarted = False
     
+    input("Pressione 'Enter' para sair...")
     print(endString)
+
 
 #Valida se os diretorios estao corretos, caso algum esteja errado finaliza a execucao
 for conf in config:
