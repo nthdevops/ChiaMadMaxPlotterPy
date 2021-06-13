@@ -1,6 +1,6 @@
 /__pycache__
 /build
 /dist
-/startPlots.spec
+*.spec
 .env
 config.ini
