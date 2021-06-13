@@ -119,7 +119,9 @@ def startMadMaxPlotter():
     except KeyboardInterrupt:
         print("\n\nExecução finalizada!\nAguarde enquanto o programa é finalizado!")
     except Exception as e:
-        print("Não conseguiu plotar!")
+        print("\nNão conseguiu plotar!")
+    else:
+        print("\nComando não foi executado!")
 
 def finishMadMaxPlotter():
     global plottingStarted
