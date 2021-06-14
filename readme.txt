@@ -4,6 +4,7 @@ Notas:
 
 Uso:
   plots (Quantidade de plots, se o valor for -1 irá fazer infinitos plots)
+  threads (Quantidade de threads para processar os plots, se o valor for -1 irá usar todas as threads disponíveis pela CPU)
   temp.dir (Será o diretório temporário, irá criar as duas pastas pro MadMax automaticamente)
   final.dir (Diretório final)
   farmer.key (Pegar a chave pública da farmer key)

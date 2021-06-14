@@ -1,5 +1,6 @@
 [CHIA]
 plots=-1
+threads=-1
 temp.dir=diretorioTempTerminandoEm\
 final.dir=diretorioFinalTerminandoEm\
 farmer.key=publicFarmerKey

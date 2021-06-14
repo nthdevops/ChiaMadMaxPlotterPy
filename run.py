@@ -15,8 +15,6 @@ if not os.path.exists(thisFilePath+"\\.env"):
     open(thisFilePath+"\\.env", 'w').close()
 envConf = dotenv.dotenv_values(".env")
 
-#Pega o total de cpus logicas do pc
-totalThreads = psutil.cpu_count()
 #Cria o objeto de configuracao do arquivo ini
 configParserObj = configparser.ConfigParser()
 configParserObj.read("config.ini")
@@ -107,18 +105,21 @@ def startMadMaxPlotter():
     tempDir2 = config["temp.dir"]+"plot"+plotNumber+"Temp2\\"
     createTempDir(tempDir1)
     createTempDir(tempDir2)
+    #Define a quantidade de threads a serem utilizadas
+    totalThreads = config["threads"]
+    if(int(totalThreads) < 0):
+        totalThreads = psutil.cpu_count()
 
     commandString = '" powershell \".\chia_plot -n \''+ config["plots"]+'\' -r \''+ str(totalThreads) +'\' -t \''+ tempDir1 +'\' -2 \''+ tempDir2 +'\' -d \''+ config["final.dir"] +'\' -p \''+ config["pool.key"] +'\' -f \''+ config["farmer.key"] +'\'\"'
-    os.system(commandString)
 
-    """ try:
+    try:
         os.system(commandString)
     except KeyboardInterrupt:
         print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
     except Exception as e:
         print("\nNao conseguiu plotar!")
     else:
-        print("\nNao foi possivel executar o powershell!") """
+        print("\nNao foi possivel executar o powershell!")
 
 def finishMadMaxPlotter():
     global plottingStarted
