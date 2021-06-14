@@ -108,16 +108,17 @@ def startMadMaxPlotter():
     createTempDir(tempDir1)
     createTempDir(tempDir2)
 
-    commandString = '" powershell -NoProfile -ExecutionPolicy ByPass \".\chia_plot -n \''+ config["plots"]+'\' -r \''+ str(totalThreads) +'\' -t \''+ tempDir1 +'\' -2 \''+ tempDir2 +'\' -d \''+ config["final.dir"] +'\' -p \''+ config["pool.key"] +'\' -f \''+ config["farmer.key"] +'\'\"'
+    commandString = '" powershell \".\chia_plot -n \''+ config["plots"]+'\' -r \''+ str(totalThreads) +'\' -t \''+ tempDir1 +'\' -2 \''+ tempDir2 +'\' -d \''+ config["final.dir"] +'\' -p \''+ config["pool.key"] +'\' -f \''+ config["farmer.key"] +'\'\"'
+    os.system(commandString)
 
-    try:
+    """ try:
         os.system(commandString)
     except KeyboardInterrupt:
         print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
     except Exception as e:
         print("\nNao conseguiu plotar!")
     else:
-        print("\nNao foi possivel executar o powershell!")
+        print("\nNao foi possivel executar o powershell!") """
 
 def finishMadMaxPlotter():
     global plottingStarted
