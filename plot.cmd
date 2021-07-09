@@ -1,1 +1,1 @@
-.\chia_plot.exe -t D:\ChiaTemp\ -d R:\ChiaPlots\ -r 4 -p poolkey-f farmerkey
+.\chia_plot.exe -t D:\ChiaTemp\ -d R:\ChiaPlots\ -r 4 -p poolkey -f farmerkey

@@ -4,3 +4,5 @@
 *.spec
 .env
 config.ini
+test*
+conf.json
