@@ -84,8 +84,9 @@ def removeTempDirs():
         if len(tempDirs) > 0:
             print("\nDeletando diretorios temporarios")
             for dir in tempDirs:
-                print("Deletando diretorio:", dir)
-                removeDir(conf.tempDir+dir)
+                dirDel = conf.tempDir+dir
+                print("Deletando diretorio:", dirDel)
+                removeDir(dirDel)
         else:
             print("Nao foi necessario deletar diretorios")
     except Exception as e:
@@ -134,6 +135,7 @@ def psPlotCreatingRemove(psPlotElem):
 def finishMadMaxPlotter():
     for psPlot in psPlotsCreating:
         psPlotCreatingRemove(psPlot)
+    time.sleep(3)
     setEnv(plotCountEnvName, "0")
     removeTempDirs()
     
@@ -157,54 +159,57 @@ for dir in conf.finalDirs:
 #Funcoes em caso de abortar o programa
 atexit.register(finishMadMaxPlotter)
 
-#Controle de plotagem
-for dir in conf.finalDirs:
-    finalPath = dir["path"]
-    maxPlots = int(dir["maxPlots"])
-    nftAddress = dir["nftAddress"]
-    replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
-    replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
-    print("Conf criacao plot:")
-    print("Path final:", finalPath)
-    print("Max Plots:", maxPlots)
-    print("NFT Singleton:", nftAddress)
-    print("Substituir plots antigos:", replaceOldPlotsEnabled)
-    print("Diretorio plots antigos:", replaceOldPlotsDeletePath)
-    totalPlotsNft = getPlotsCount(finalPath)
-    jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
+try:
+    #Controle de plotagem
+    for dir in conf.finalDirs:
+        finalPath = dir["path"]
+        maxPlots = int(dir["maxPlots"])
+        nftAddress = dir["nftAddress"]
+        replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
+        replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
+        print("Conf criacao plot:")
+        print("Path final:", finalPath)
+        print("Max Plots:", maxPlots)
+        print("NFT Singleton:", nftAddress)
+        print("Substituir plots antigos:", replaceOldPlotsEnabled)
+        print("Diretorio plots antigos:", replaceOldPlotsDeletePath)
+        totalPlotsNft = getPlotsCount(finalPath)
+        jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
 
-    def plotCreate():
-        if(replaceOldPlotsEnabled):
-            r = requests.post(plotReplaceAPIUrl, json=jsonDeletePath)
-        psPlotsCreating.append(startMadMaxPlotter(1, finalPath, nftAddress))
+        def plotCreate():
+            if(replaceOldPlotsEnabled):
+                r = requests.post(plotReplaceAPIUrl, json=jsonDeletePath)
+            psPlotsCreating.append(startMadMaxPlotter(1, finalPath, nftAddress))
 
-    while(True):
-        if totalPlotsNft < maxPlots:
-            if(len(psPlotsCreating) == 0):
-                plotCreate()
+        while(True):
+            if totalPlotsNft < maxPlots:
+                if(len(psPlotsCreating) == 0):
+                    plotCreate()
 
-            for psPlot in psPlotsCreating:
-                if not psPlot["created"]:
+                for psPlot in psPlotsCreating:
+                    if not psPlot["created"]:
+                        log = psPlot["logName"]
+                        if os.path.isfile(log):
+                            for line in open(log).readlines():
+                                textLine = str(line)
+                                if "Total plot creation time" in textLine:
+                                    print("Criacao de plot finalizada, ira iniciar outro plot, log:", log)
+                                    psPlot["created"] = True
+                                    plotCreate()
+                                    continue
+            else:
+                for psPlot in psPlotsCreating:
                     log = psPlot["logName"]
                     if os.path.isfile(log):
                         for line in open(log).readlines():
                             textLine = str(line)
-                            if "Total plot creation time" in textLine:
-                                print("Criacao de plot finalizada, ira iniciar outro plot, log:", log)
-                                psPlot["created"] = True
-                                plotCreate()
+                            if "Copy to" in textLine and "finished" in textLine:
+                                print("Copia finalizada, ira remover da lista de plots em criacao, log:", log)
+                                psPlotCreatingRemove(psPlot)
                                 continue
-        else:
-            for psPlot in psPlotsCreating:
-                log = psPlot["logName"]
-                if os.path.isfile(log):
-                    for line in open(log).readlines():
-                        textLine = str(line)
-                        if "Copy to" in textLine and "finished" in textLine:
-                            print("Copia finalizada, ira remover da lista de plots em criacao, log:", log)
-                            psPlotCreatingRemove(psPlot)
-                            continue
-            if len(psPlotsCreating) == 0:
-                print("Finalizou a criacao de todos os plots para o diretorio final", dir)
-                break
-        time.sleep(5)
+                if len(psPlotsCreating) == 0:
+                    print("Finalizou a criacao de todos os plots para o diretorio final", dir)
+                    break
+            time.sleep(5)
+except KeyboardInterrupt:
+    print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
