@@ -110,7 +110,7 @@ def startMadMaxPlotter(plots, finalDir, contractAdress):
     if(totalThreads < 0):
         totalThreads = psutil.cpu_count()
 
-    commandString = 'powershell \".\chia_plot.exe -n \'' + str(plots) +'\' -r \'' + str(totalThreads) + '\' -t \'' + tempDir1 + '\' -2 \'' + tempDir2 + '\' -d \'' + str(finalDir) + '\' -c \'' + str(contractAdress) + '\' -f \'' + conf.farmerKey + '\' > \'' + conf.logsPath + plotName + '.log\'\"'
+    commandString = 'powershell \".\chia_plot.exe -n \'' + str(plots) +'\' -r \'' + str(totalThreads) + '\' -t \'' + tempDir1 + '\' -2 \'' + tempDir2 + '\' -d \'' + str(finalDir) + '\' -c \'' + str(contractAdress) + '\' -f \'' + conf.farmerKey + '\' | Out-File \'' + logName + '\' -Encoding UTF8\"'
 
     psProcess = None
     try:
@@ -190,9 +190,8 @@ try:
                     if not psPlot["created"]:
                         log = psPlot["logName"]
                         if os.path.isfile(log):
-                            for line in open(log).readlines():
-                                textLine = str(line)
-                                if "Total plot creation time" in textLine:
+                            for line in open(log, encoding='utf-8-sig').read().splitlines():
+                                if "Total plot creation time" in line:
                                     print("Criacao de plot finalizada, ira iniciar outro plot, log:", log)
                                     psPlot["created"] = True
                                     plotCreate()
@@ -201,9 +200,8 @@ try:
                 for psPlot in psPlotsCreating:
                     log = psPlot["logName"]
                     if os.path.isfile(log):
-                        for line in open(log).readlines():
-                            textLine = str(line)
-                            if "Copy to" in textLine and "finished" in textLine:
+                        for line in open(log, encoding='utf-8-sig').read().splitlines():
+                            if "Copy to" in line and "finished" in line:
                                 print("Copia finalizada, ira remover da lista de plots em criacao, log:", log)
                                 psPlotCreatingRemove(psPlot)
                                 continue
