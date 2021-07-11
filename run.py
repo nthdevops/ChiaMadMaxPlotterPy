@@ -1,8 +1,16 @@
-import psutil, os, atexit, shutil, dotenv, subprocess, requests, time, jsonConf
+import psutil, os, atexit, shutil, dotenv, subprocess, requests, time, jsonConf, sys
 
 #Declaracao de variaveis globais
 endString = "\n\nPrograma finalizado!\nBye Bye :)\n"
-thisFilePath = str(os.path.dirname(os.path.realpath(__file__)))
+def filePath():
+    path = ""
+    if getattr(sys, 'frozen', False):
+            path = os.path.dirname(sys.executable)
+    else:
+        if __file__:
+            path = os.path.dirname(__file__)
+    return path
+thisFilePath = str(filePath())
 #Vai para o diretorio atual do arquivo
 os.chdir(thisFilePath)
 
@@ -14,7 +22,7 @@ envConf = dotenv.dotenv_values(".env")
 psPlotsCreating = []
 
 #Cria o objeto de configuracao do atraves da classe de json
-conf = jsonConf.getConf('./conf.json')
+conf = jsonConf.getConf(thisFilePath+'\\conf.json')
 
 #API Conf
 plotReplaceAPIUrl = "http://"+conf.plotReplaceAPI.host+":"+conf.plotReplaceAPI.port+"/addPlotToDelete"
