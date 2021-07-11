@@ -197,7 +197,7 @@ try:
         jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
 
         def plotCreate():
-            requestReplaceAPI(replaceOldPlotsEnabled)                
+            requestReplaceAPI(replaceOldPlotsEnabled)
             psPlotsCreating.append(startMadMaxPlotter(1, finalPath, nftAddress))
 
         while(True):
