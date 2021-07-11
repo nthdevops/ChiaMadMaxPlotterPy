@@ -213,7 +213,9 @@ try:
                                 if "Total plot creation time" in line:
                                     print("Criacao de plot finalizada, ira iniciar outro plot, log:", log)
                                     psPlot["created"] = True
-                                    plotCreate()
+                                    totalPlotsNft += 1
+                                    if totalPlotsNft < maxPlots:
+                                        plotCreate()
                                     continue
             else:
                 for psPlot in psPlotsCreating:
