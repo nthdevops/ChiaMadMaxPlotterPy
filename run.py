@@ -1,5 +1,4 @@
-import psutil, os, atexit, shutil, dotenv, subprocess, requests, time
-import jsonConf
+import psutil, os, atexit, shutil, dotenv, subprocess, requests, time, jsonConf
 
 #Declaracao de variaveis globais
 endString = "\n\nPrograma finalizado!\nBye Bye :)\n"
@@ -146,6 +145,19 @@ def getPlotsCount(plotsPath):
     totalPlots = len([f for f in os.listdir(plotsPath) if len(f.split('.plot')) == 2])
     return totalPlots
 
+def requestReplaceAPI(replaceOldPlotsEnabled):
+    if(replaceOldPlotsEnabled):
+        if conf.plotReplaceAPI.ignoreFirst:
+            conf.plotReplaceAPI.ignoreFirst = False
+            return
+        requestSent = False
+        while not requestSent:
+            try:
+                r = requests.post(plotReplaceAPIUrl, json=jsonDeletePath, timeout=120)
+            except Exception as e:
+                print("Nao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
+            else:
+                requestSent = True
 
 #Valida se os diretorios estao corretos, caso algum esteja errado finaliza a execucao
 for dir in conf.finalDirs:
@@ -177,8 +189,7 @@ try:
         jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
 
         def plotCreate():
-            if(replaceOldPlotsEnabled):
-                r = requests.post(plotReplaceAPIUrl, json=jsonDeletePath)
+            requestReplaceAPI(replaceOldPlotsEnabled)                
             psPlotsCreating.append(startMadMaxPlotter(1, finalPath, nftAddress))
 
         while(True):
