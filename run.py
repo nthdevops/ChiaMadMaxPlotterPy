@@ -14,7 +14,7 @@ envConf = dotenv.dotenv_values(".env")
 psPlotsCreating = []
 
 #Cria o objeto de configuracao do atraves da classe de json
-conf = jsonConf.getConf('conf.json')
+conf = jsonConf.getConf('./conf.json')
 
 #API Conf
 plotReplaceAPIUrl = "http://"+conf.plotReplaceAPI.host+":"+conf.plotReplaceAPI.port+"/addPlotToDelete"
