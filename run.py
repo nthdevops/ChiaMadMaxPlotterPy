@@ -1,4 +1,5 @@
 import psutil, os, atexit, shutil, dotenv, subprocess, requests, time, jsonConf, sys
+from sys import exit
 
 #Declaracao de variaveis globais
 endString = "\n\nPrograma finalizado!\nBye Bye :)\n"
