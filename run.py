@@ -1,16 +1,18 @@
 import psutil, os, atexit, shutil, dotenv, subprocess, requests, time, jsonConf, sys
 from sys import exit
 
-#Declaracao de variaveis globais
-endString = "\n\nPrograma finalizado!\nBye Bye :)\n"
+# Retorna o path do arquivo de acordo com o tipo de execucao, se for binario ou o script diretamente
 def filePath():
     path = ""
     if getattr(sys, 'frozen', False):
             path = os.path.dirname(sys.executable)
     else:
-        if __file__:
-            path = os.path.dirname(__file__)
+        path = os.path.dirname(os.path.abspath(__file__))
     return path
+
+#Declaracao de variaveis globais
+endString = "\n\nPrograma finalizado!\nBye Bye :)\n"
+
 thisFilePath = str(filePath())
 #Vai para o diretorio atual do arquivo
 os.chdir(thisFilePath)
@@ -25,13 +27,46 @@ psPlotsCreating = []
 #Cria o objeto de configuracao do atraves da classe de json
 conf = jsonConf.getConf(thisFilePath+'\\conf.json')
 
+#Funcao para remover os diretorios temporarios
+def removeTempDirs():
+    try:
+        tempDirs = os.listdir(conf.tempDir)
+        if len(tempDirs) > 0:
+            print("\nDeletando diretorios temporarios")
+            for dir in tempDirs:
+                dirDel = conf.tempDir+dir
+                print("Deletando diretorio:", dirDel)
+                removeDir(dirDel)
+        else:
+            print("Nao foi necessario deletar diretorios")
+    except Exception as e:
+        print("\nNao conseguiu deletar os diretorios temporarios, Excecao:\n"+ str(e) + endString)
+
 #API Conf
 plotReplaceAPIUrl = "http://"+conf.plotReplaceAPI.host+":"+conf.plotReplaceAPI.port+"/addPlotToDelete"
 
-#Funcao exit com wait de input
-def tExit():
+#Funcao para finalizar o plotter
+def finishMadMaxPlotter():
+    psPlotCreatingRemoveAll()
+    print("\nQuase finalizando..")
+    time.sleep(4)
+    setEnv(plotCountEnvName, "0")
+    removeTempDirs()
+    
+    print(endString)
     input("Pressione 'Enter' para sair...")
-    exit()
+
+#Funcoes em caso de abortar o programa
+atexit.register(finishMadMaxPlotter)
+
+#Valida se os diretorios estao corretos, caso algum esteja errado finaliza a execucao
+for dir in conf.finalDirs:
+    confPath = dir["path"]
+    if(os.path.exists(confPath)):
+        continue
+    else:
+        print("\nNao foi possivel encontrar o diretorio " + confPath + ", configurado como path!" + endString)
+        exit()
 
 def setEnv(key, value):
     global envConf
@@ -79,26 +114,11 @@ def createTempDir(path):
             cleanDir(path)
     except Exception as e:
         print("Nao foi possivel criar pastas temporarias!"+endString)
-        tExit()
+        exit()
 
 #Funcao de remocao de diretorios
 def removeDir(path):
     shutil.rmtree(path, ignore_errors=True)
-
-#Funcao para remover os diretorios temporarios
-def removeTempDirs():
-    try:
-        tempDirs = os.listdir(conf.tempDir)
-        if len(tempDirs) > 0:
-            print("\nDeletando diretorios temporarios")
-            for dir in tempDirs:
-                dirDel = conf.tempDir+dir
-                print("Deletando diretorio:", dirDel)
-                removeDir(dirDel)
-        else:
-            print("Nao foi necessario deletar diretorios")
-    except Exception as e:
-        print("\nNao conseguiu deletar os diretorios temporarios, Excecao:\n"+ str(e) + endString)
 
 #Funcao para iniciar a plotagem
 def startMadMaxPlotter(plots, finalDir, contractAdress):
@@ -127,109 +147,150 @@ def startMadMaxPlotter(plots, finalDir, contractAdress):
         print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
     except Exception as e:
         print("\nNao conseguiu plotar!\n",e)
+        exit()
     else:
         print("\nPowershell executando!")
     
     return {"psProcess": psProcess, "logName": logName, "created": False}
 
-def psPlotCreatingRemove(psPlotElem):
-    try:
-        psPlotElem["psProcess"].terminate()
-    except:
-        print("Nao foi necessario finalizar o processo")
-    psPlotsCreating.remove(psPlotElem)
-    plotEnv('sub')
-
-def finishMadMaxPlotter():
-    for psPlot in psPlotsCreating:
-        psPlotCreatingRemove(psPlot)
-    time.sleep(3)
-    setEnv(plotCountEnvName, "0")
-    removeTempDirs()
-    
-    input("Pressione 'Enter' para sair...")
-    print(endString)
-
+#Conta o total de plots no diretorio
 def getPlotsCount(plotsPath):
     totalPlots = len([f for f in os.listdir(plotsPath) if len(f.split('.plot')) == 2])
     return totalPlots
 
-def requestReplaceAPI(replaceOldPlotsEnabled):
-    if(replaceOldPlotsEnabled):
+# A partir de um diretorio do arquivo de configuracao, cria um dict de facil acesso com as informacoes daquele diretorio
+def getPlotDirInfos(dir):
+    finalPath = dir["path"]
+    maxPlots = int(dir["maxPlots"])
+    nftAddress = dir["nftAddress"]
+    replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
+    replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
+    jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
+    totalPlotsNft = getPlotsCount(finalPath)
+    
+    dirInfos = {}
+    dirInfos["finalPath"] = finalPath
+    dirInfos["maxPlots"] = maxPlots
+    dirInfos["nftAddress"] = nftAddress
+    dirInfos["replaceOldPlotsEnabled"] = replaceOldPlotsEnabled
+    dirInfos["replaceOldPlotsDeletePath"] = replaceOldPlotsDeletePath
+    dirInfos["jsonDeletePath"] = jsonDeletePath
+    dirInfos["totalPlotsNft"] = totalPlotsNft
+    return dirInfos
+
+# Printa as informacoes a partir de um dict de dir retornado pela funcao getPlotDirInfos
+def printPlotDirInfos(dirInfos):
+    print("Conf criacao plot:")
+    print("Path final:", dirInfos["finalPath"])
+    print("Max Plots:", dirInfos["maxPlots"])
+    print("NFT Singleton:", dirInfos["nftAddress"])
+    print("Substituir plots antigos:", dirInfos["replaceOldPlotsEnabled"])
+    print("Diretorio plots antigos:", dirInfos["replaceOldPlotsDeletePath"])
+
+# Requisita para a API de substituicao de plots a partir das infos de diretorio da funcao getPlotDirInfos
+def requestReplaceAPI(dirInfos):
+    if(dirInfos["replaceOldPlotsEnabled"]):
         if conf.plotReplaceAPI.ignoreFirst:
             conf.plotReplaceAPI.ignoreFirst = False
             return
         requestSent = False
         while not requestSent:
             try:
-                r = requests.post(plotReplaceAPIUrl, json=jsonDeletePath, timeout=120)
+                r = requests.post(plotReplaceAPIUrl, json=dirInfos["jsonDeletePath"], timeout=120)
+                print("Resposta da reposicao de plots:", r.text, "\nStatusCode:", r.status_code)
             except Exception as e:
-                print("Nao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
+                print("\nNao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
             else:
                 requestSent = True
 
-#Valida se os diretorios estao corretos, caso algum esteja errado finaliza a execucao
-for dir in conf.finalDirs:
-    confPath = dir["path"]
-    if(os.path.exists(confPath)):
-        continue
-    else:
-        print("\nNao foi possivel encontrar o diretorio " + confPath + ", configurado como path!" + endString)
-        tExit()
+# Retorna a valicao de criacao de plot para o diretorio
+def canCreatePlot(dirInfos):
+    return dirInfos["totalPlotsNft"] < dirInfos["maxPlots"]
 
-#Funcoes em caso de abortar o programa
-atexit.register(finishMadMaxPlotter)
+# A partir de um elemento da lista psPlotsCreating, inicia a criacao do plot
+def plotCreate(psPlotElem):
+    psPlotDirInfo = psPlotElem["dirInfo"]
+    printPlotDirInfos(psPlotDirInfo)
+    psPlotElem["dirInfo"]["totalPlotsNft"] += 1
+    requestReplaceAPI(psPlotDirInfo)
+    psPlotElem["madMaxProcess"].append(startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"]))
+
+#Valida qual diretorio ira iniciar a nova criacao de plot e inicia
+def newPlot():
+    #Variavel para dizer se conseguiu ou nao criar plots, indicando que acabou a criacao de plots se o valor for False
+    plotCreated = False
+    for psPlotElem in psPlotsCreating:
+        if canCreatePlot(psPlotElem["dirInfo"]):            
+            plotCreate(psPlotElem)
+            plotCreated = True
+            break
+    return plotCreated
+
+# Remove o elemento indicado, da lista de plots em criacao
+def psPlotCreatingRemove(psMadMaxProcess, madProcess):
+    try:
+        madProcess["psProcess"].terminate()
+    except:
+        pass
+    psMadMaxProcess.remove(madProcess)
+    plotEnv('sub')
+
+# Remove o elemento indicado, da lista de plots em criacao
+def psPlotCreatingRemoveAll():
+    try:
+        for psPlot in psPlotsCreating:
+            for madProcess in psPlot["madMaxProcess"]:
+                madProcess["psProcess"].terminate()
+                psPlot["madMaxProcess"].remove(madProcess)
+                plotEnv('sub')
+    except:
+        print("Deu ruim")
 
 try:
-    #Controle de plotagem
+    # Deleta diretorios temporarios, antes de iniciar a execucao
+    removeTempDirs()
+
+    #Cria a fila de criacao de plots
     for dir in conf.finalDirs:
-        finalPath = dir["path"]
-        maxPlots = int(dir["maxPlots"])
-        nftAddress = dir["nftAddress"]
-        replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
-        replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
-        print("Conf criacao plot:")
-        print("Path final:", finalPath)
-        print("Max Plots:", maxPlots)
-        print("NFT Singleton:", nftAddress)
-        print("Substituir plots antigos:", replaceOldPlotsEnabled)
-        print("Diretorio plots antigos:", replaceOldPlotsDeletePath)
-        totalPlotsNft = getPlotsCount(finalPath)
-        jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
+        dirInfo = getPlotDirInfos(dir)
+        #Antes de fazer o append para a lista psPlotsCreating, valida se ainda ha espaco para criacao de plots
+        if canCreatePlot(dirInfo):
+            psPlotsCreating.append({"dirInfo": dirInfo, "madMaxProcess": []})
 
-        def plotCreate():
-            requestReplaceAPI(replaceOldPlotsEnabled)
-            psPlotsCreating.append(startMadMaxPlotter(1, finalPath, nftAddress))
+    #Inicia a criacao do primeiro plot, se nao criar, finaliza o programa, ja que todos os diretorios estao cheios e nao sera necessario criar plots
+    if not newPlot():
+        exit()
 
-        while(True):
-            if totalPlotsNft < maxPlots:
-                if(len(psPlotsCreating) == 0):
-                    plotCreate()
-
-                for psPlot in psPlotsCreating:
-                    if not psPlot["created"]:
-                        log = psPlot["logName"]
-                        if os.path.isfile(log):
-                            for line in open(log, encoding='utf-8-sig').read().splitlines():
-                                if "Total plot creation time" in line:
-                                    print("Criacao de plot finalizada, ira iniciar outro plot, log:", log)
-                                    psPlot["created"] = True
-                                    totalPlotsNft += 1
-                                    if totalPlotsNft < maxPlots:
-                                        plotCreate()
-                                    continue
-            else:
-                for psPlot in psPlotsCreating:
-                    log = psPlot["logName"]
+    print(psPlotsCreating)#DELETE
+    while(True):
+        for idx, psPlot in enumerate(psPlotsCreating):
+            if len(psPlot["madMaxProcess"]) > 0:
+                dirInfo = psPlot["dirInfo"]
+                for madProcess in psPlot["madMaxProcess"]:
+                    log = madProcess["logName"]
                     if os.path.isfile(log):
                         for line in open(log, encoding='utf-8-sig').read().splitlines():
-                            if "Copy to" in line and "finished" in line:
-                                print("Copia finalizada, ira remover da lista de plots em criacao, log:", log)
-                                psPlotCreatingRemove(psPlot)
-                                continue
-                if len(psPlotsCreating) == 0:
-                    print("Finalizou a criacao de todos os plots para o diretorio final", dir)
-                    break
-            time.sleep(5)
+                            if not madProcess["created"]:
+                                if "Total plot creation time" in line:
+                                    print(line,"| log:", log)
+                                    madProcess["created"] = True
+                                    newPlot()
+                                    break
+                            elif "Copy to" in line and "finished" in line:
+                                print(line,"| log:", log)
+                                psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
+                                print(psPlotsCreating)#DELETE
+                                break
+            elif not canCreatePlot(psPlot["dirInfo"]):
+                psPlotsCreating.remove(psPlot)
+                print(psPlotsCreating)#DELETE
+        
+        #Caso nao exista elementos para criacao de plots, finaliza o loop, partindo para o fim do programa
+        if len(psPlotsCreating) == 0:
+            break
+        time.sleep(5)
 except KeyboardInterrupt:
     print("\n\nExecucao finalizada!\nAguarde enquanto o programa eh finalizado!")
+
+# Caso tudo tenha corrido bem, finaliza o programa
+exit()
