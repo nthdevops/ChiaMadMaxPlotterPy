@@ -14,6 +14,7 @@
     ],
     "farmerKey": "Farmer Public Key",
     "logsPath": "Diretorio para os logs do MadMax",
+    "loglevel": "info" OU "debug",
     "plotReplaceAPI": {
         "host": "host para a API de controle para deletar plots",
         "port": "porta para a API de controle para deletar plots",
