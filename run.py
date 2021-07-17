@@ -269,7 +269,7 @@ def plotCreate(psPlotElem):
     #Prints iniciais
     info("\n=========================================================================================================")
     info("Iniciando criacao de plot!\n")
-    info(getDirInfosStr(dirInfo))
+    info(getDirInfosStr(psPlotDirInfo))
     #Inicia o madMaxPlotter, armazenando o retorno da funcao
     madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
     #Adiciona a lista de processos do elemento de criacao de plots
