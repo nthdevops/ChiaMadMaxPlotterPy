@@ -221,10 +221,6 @@ def getDirInfosStr(dirInfos):
     returnStr = "Path final: " + str(dirInfos["finalPath"]) + "\nMax Plots: " + str(dirInfos["maxPlots"]) + "\nNFT Singleton: " + str(dirInfos["nftAddress"]) + "\nSubstituir plots antigos: " + str(dirInfos["replaceOldPlotsEnabled"]) + "\nDiretorio plots antigos: " + str(dirInfos["replaceOldPlotsDeletePath"])
     return returnStr
 
-# Printa as informacoes a partir de um dict de dir retornado pela funcao getPlotDirInfos
-def printPlotDirInfos(dirInfos):
-    print(getDirInfosStr(dirInfos))
-
 # Requisita para a API de substituicao de plots a partir das infos de diretorio da funcao getPlotDirInfos
 def requestReplaceAPI(dirInfos):
     requestSent = False
@@ -273,7 +269,7 @@ def plotCreate(psPlotElem):
     #Prints iniciais
     info("\n=========================================================================================================")
     info("Iniciando criacao de plot!\n")
-    printPlotDirInfos(psPlotDirInfo)
+    info(getDirInfosStr(dirInfo))
     #Inicia o madMaxPlotter, armazenando o retorno da funcao
     madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
     #Adiciona a lista de processos do elemento de criacao de plots
@@ -354,7 +350,7 @@ try:
         else:
             info("\n=========================================================================================================")
             info("\nNao sera necessaria a criacao de plots para o dir:")
-            printPlotDirInfos(dirInfo)
+            info(getDirInfosStr(dirInfo))
             info("\nO numero maximo de plots ja foi atingido!")
             info("\n=========================================================================================================")
 
@@ -403,7 +399,7 @@ try:
             elif not canCreatePlot(psPlot):
                 info("\n=========================================================================================================")
                 info("\nCriacao de plots finalizada para:")
-                printPlotDirInfos(dirInfo)
+                info(getDirInfosStr(dirInfo))
                 psPlotsCreating.remove(psPlot)
                 info("\n=========================================================================================================")
         
