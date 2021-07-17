@@ -182,8 +182,21 @@ def startMadMaxPlotter(plots, finalDir, contractAdress):
 
 #Conta o total de plots no diretorio
 def getPlotsCount(plotsPath):
-    totalPlots = len([f for f in os.listdir(plotsPath) if len(f.split('.plot')) == 2])
+    totalPlots = 0
+    for f in os.listdir(plotsPath):
+        if len(f.split('.plot')) == 2:
+            if not len(f.split('.tmp')) == 2:
+                totalPlots +=1
     return totalPlots
+
+#Se existir um arquivo .plot.temp ira deleta-lo
+def deleteBrokenTempPlots(plotsPath):
+    for f in os.listdir(plotsPath):
+        if len(f.split('.plot')) == 2:
+            if len(f.split('.tmp')) == 2:
+                deletePath = plotsPath+f
+                debug("\nPlot temp detectado, sera deleteado o arquivo:", deletePath)
+                os.remove(deletePath)
 
 # A partir de um diretorio do arquivo de configuracao, cria um dict de facil acesso com as informacoes daquele diretorio
 def getPlotDirInfos(dir):
@@ -193,7 +206,6 @@ def getPlotDirInfos(dir):
     replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
     replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
     jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
-    totalPlotsNft = getPlotsCount(finalPath)
     
     dirInfos = {}
     dirInfos["finalPath"] = finalPath
@@ -202,16 +214,16 @@ def getPlotDirInfos(dir):
     dirInfos["replaceOldPlotsEnabled"] = replaceOldPlotsEnabled
     dirInfos["replaceOldPlotsDeletePath"] = replaceOldPlotsDeletePath
     dirInfos["jsonDeletePath"] = jsonDeletePath
-    dirInfos["totalPlotsNft"] = totalPlotsNft
     return dirInfos
+
+#Retorna uma string com as infos do diretorio
+def getDirInfosStr(dirInfos):
+    returnStr = "Path final: " + str(dirInfos["finalPath"]) + "\nMax Plots: " + str(dirInfos["maxPlots"]) + "\nNFT Singleton: " + str(dirInfos["nftAddress"]) + "\nSubstituir plots antigos: " + str(dirInfos["replaceOldPlotsEnabled"]) + "\nDiretorio plots antigos: " + str(dirInfos["replaceOldPlotsDeletePath"])
+    return returnStr
 
 # Printa as informacoes a partir de um dict de dir retornado pela funcao getPlotDirInfos
 def printPlotDirInfos(dirInfos):
-    info("Path final:", dirInfos["finalPath"])
-    info("Max Plots:", dirInfos["maxPlots"])
-    info("NFT Singleton:", dirInfos["nftAddress"])
-    info("Substituir plots antigos:", dirInfos["replaceOldPlotsEnabled"])
-    info("Diretorio plots antigos:", dirInfos["replaceOldPlotsDeletePath"])
+    print(getDirInfosStr(dirInfos))
 
 # Requisita para a API de substituicao de plots a partir das infos de diretorio da funcao getPlotDirInfos
 def requestReplaceAPI(dirInfos):
@@ -231,9 +243,29 @@ def requestReplaceAPI(dirInfos):
                 requestSent = True
     return requestSent
 
+#Retorna o total de plots no diretorio + os plots em criacao
+def getRealTotalPlots(psPlotElem):
+    dirInfos = psPlotElem["dirInfo"]
+    currentPlotCountInDir = getPlotsCount(dirInfos["finalPath"])
+    #O tamanho da lista madMaxProcess, diz quantos plots estão em andamento no momento
+    currentPlotsInCreation = len(psPlotElem["madMaxProcess"])
+    return currentPlotCountInDir + currentPlotsInCreation
+
 # Retorna a valicao de criacao de plot para o diretorio
-def canCreatePlot(dirInfos):
-    return dirInfos["totalPlotsNft"] < dirInfos["maxPlots"]
+def canCreatePlot(psPlotElem):
+    dirInfos = psPlotElem["dirInfo"]
+    realPlotCount = getRealTotalPlots(psPlotElem)
+    maxPlost = dirInfos["maxPlots"]
+    #Se os plots em andamento + os plots do diretorio forem menores que o maximo, realmente pode-se criar outro plot
+    if realPlotCount < maxPlost:
+        return True
+    return False
+
+def getPlotCountStr(psPlotElem):
+    dirInfos = psPlotElem["dirInfo"]
+    realPlotCount = getRealTotalPlots(psPlotElem)
+    maxPlost = dirInfos["maxPlots"]
+    return ("Valor real da contagem de plots: " + str(realPlotCount) + " | Maximo:" + str(maxPlost))
 
 # A partir de um elemento da lista psPlotsCreating, inicia a criacao do plot
 def plotCreate(psPlotElem):
@@ -246,10 +278,8 @@ def plotCreate(psPlotElem):
     madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
     #Adiciona a lista de processos do elemento de criacao de plots
     psPlotElem["madMaxProcess"].append(madProcess)
-    #Incrementa o valor de plots NFT do diretorio
-    psPlotElem["dirInfo"]["totalPlotsNft"] += 1
     newLogName = madProcess["logName"]
-    info("\nIniciou a criacao do plot", psPlotElem["dirInfo"]["totalPlotsNft"], "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogName)
+    info("\nIniciou a criacao do plot", getRealTotalPlots(psPlotElem), "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogName)
     cntTries = 0
     #Validacao para o output do madMax, somente dando continuidade quando o arquivo de log for criado, provando que o MadMax iniciou, desiste apos 50 tentativas
     while not os.path.isfile(newLogName):
@@ -275,13 +305,14 @@ def plotCreate(psPlotElem):
             break
     plotsLogsHistory[madProcess["logName"]] = newLogLines
     info("=========================================================================================================\n\nPlot em criacao...")
+    return True
 
 #Valida qual diretorio ira iniciar a nova criacao de plot e inicia
 def newPlot():
     #Variavel para dizer se conseguiu ou nao criar plots, indicando que acabou a criacao de plots se o valor for False no retorno
     plotCreated = False
     for psPlotElem in psPlotsCreating:
-        if canCreatePlot(psPlotElem["dirInfo"]):            
+        if canCreatePlot(psPlotElem):
             plotCreate(psPlotElem)
             plotCreated = True
             break
@@ -311,9 +342,15 @@ try:
     #Cria a fila de criacao de plots
     for dir in conf.finalDirs:
         dirInfo = getPlotDirInfos(dir)
+        if conf.deleteTempBeforeStart:
+            deleteBrokenTempPlots(dir["path"])
         #Antes de fazer o append para a lista psPlotsCreating, valida se ainda ha espaco para criacao de plots
-        if canCreatePlot(dirInfo):
-            psPlotsCreating.append({"dirInfo": dirInfo, "madMaxProcess": []})
+        if getPlotsCount(dir["path"]) < dir["maxPlots"]:
+            psElem = {"dirInfo": dirInfo, "madMaxProcess": []}
+            psPlotsCreating.append(psElem)
+            debug("\nElemento adicionado para criacao:")
+            debug(getDirInfosStr(dirInfo))
+            debug(getPlotCountStr(psElem))
         else:
             info("\n=========================================================================================================")
             info("\nNao sera necessaria a criacao de plots para o dir:")
@@ -356,8 +393,6 @@ try:
                                             newPlot()
                                             break
                                     #Caso seja um plot ja criado, valida se a copia do arquivo foi terminada, caso sim, elimina o elemento da lista de processos do madMax
-                                    elif checktextInStr(line, "Started copy to "):
-                                        info("\n" + line,"| log:", log)
                                     elif checktextInStr(line, "Copy to", "finished, took"):
                                         info("\n" + line,"| log:", log)
                                         psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
@@ -365,7 +400,7 @@ try:
                             #Adiciona as novas linhas de log ao historico, apos o processamento finalizar
                             plotsLogsHistory[log] = logLines
             #Se o primeiro if, disser que a lista de processos do madMax esta vazia, ira validar para que remova da lista de criacao de plots caso nao seja possivel criar novos plots para o diretorio em questao
-            elif not canCreatePlot(psPlot["dirInfo"]):
+            elif not canCreatePlot(psPlot):
                 info("\n=========================================================================================================")
                 info("\nCriacao de plots finalizada para:")
                 printPlotDirInfos(dirInfo)
