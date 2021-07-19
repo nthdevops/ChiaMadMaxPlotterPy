@@ -1,6 +1,7 @@
-import psutil, os, atexit, shutil, subprocess, requests, time, jsonConf, sys, logging
+import psutil, os, atexit, shutil, subprocess, requests, time, jsonConf, sys
 from sys import exit
 from datetime import datetime
+from customLogs import *
 
 # Retorna o path do arquivo de acordo com o tipo de execucao, se for binario ou o script diretamente
 def filePath():
@@ -20,39 +21,11 @@ os.chdir(thisFilePath)
 #Cria o objeto de configuracao do atraves da classe de json
 conf = jsonConf.getConf(thisFilePath+'\\conf.json')
 
-#Logging config
-loglevel = getattr(logging, conf.loglevel.upper())
-logging.basicConfig(handlers=[logging.FileHandler(filename=conf.logsPath+'plotter.log', 
-                                                 encoding='utf-8-sig', mode='w')], format='%(message)s', level=loglevel)
-def strListFromArgs(args):
-    compiledStr = str(args[0])
-    sizeArgs = len(args)
-    if sizeArgs > 1:
-        for x in range(1, sizeArgs):
-            compiledStr += " " + str(args[x])
-    return compiledStr
-
-def debug(*args):
-    messageList = strListFromArgs(args)
-    logging.debug(messageList)
-
-def info(*args):
-    messageList = strListFromArgs(args)
-    logging.info(messageList)
-    print(messageList)
-
-def warning(*args):
-    messageList = strListFromArgs(args)
-    logging.warning(messageList)
-    print(messageList)
-
-def error(*args):
-    messageList = strListFromArgs(args)
-    logging.error(messageList)
-    print(messageList)
+#Inicia a configuracao de logs
+logger = logger = CustomLog(conf, 'plotter')
 
 #Declaracao de variaveis globais
-endString = "\nPrograma finalizado!\nBye Bye :)\n"
+endString = "Programa finalizado!\nBye Bye :)\n"
 
 #Plotting control
 psPlotsCreating = []
@@ -66,33 +39,33 @@ def removeTempDirs():
     try:
         tempDirs = os.listdir(conf.tempDir)
         if len(tempDirs) > 0:
-            info("\nDeletando diretorios temporarios")
+            logger.info("Deletando diretorios temporarios")
             for dir in tempDirs:
                 dirDel = conf.tempDir+dir
-                info("\nDeletando diretorio:", dirDel)
+                logger.info("Deletando diretorio:", dirDel)
                 cntTries = 0
                 while True:
                     if os.path.exists(dirDel):
                         cntTries += 1
                         removeDir(dirDel)
                     else:
-                        info("Diretorio deletado!")
+                        logger.info("Diretorio deletado!")
                         break
                     if cntTries >= 20:
-                        warning("Nao conseguiu deletar o diretorio!")
+                        logger.warning("Nao conseguiu deletar o diretorio!")
                         break
                     time.sleep(1)
     except Exception as e:
-        error("\nNao conseguiu deletar os diretorios temporarios, Excecao:\n"+ str(e))
+        logger.error("Nao conseguiu deletar os diretorios temporarios, Excecao:\n"+ str(e))
 
 #Funcao para finalizar o plotter
 def finishMadMaxPlotter():
-    info("\n\nFinalizando execucao do programa, aguarde!")
+    logger.info("Finalizando execucao do programa, aguarde!")
     psPlotCreatingRemoveAll()
-    info("\nQuase finalizando..")
+    logger.info("Quase finalizando..")
     removeTempDirs()
     
-    info(endString)
+    logger.info(endString)
     input("Pressione 'Enter' para sair...")
 
 #Funcoes em caso de abortar o programa
@@ -104,7 +77,7 @@ for dir in conf.finalDirs:
     if(os.path.exists(confPath)):
         continue
     else:
-        error("\nNao foi possivel encontrar o diretorio " + confPath + ", configurado como path!")
+        logger.error("Nao foi possivel encontrar o diretorio " + confPath + ", configurado como path!")
         exit()
 
 #Funcao de limpeza de diretorios
@@ -121,7 +94,7 @@ def createTempDir(path):
         else:
             cleanDir(path)
     except Exception as e:
-        error("\n\nNao foi possivel criar pastas temporarias!\nExcecao:", e)
+        logger.error("Nao foi possivel criar pastas temporarias!\nExcecao:", e)
         exit()
 
 #Funcao de remocao de diretorios
@@ -135,7 +108,7 @@ def readLog(logPath):
             lines = f.read().splitlines()
         return lines
     else:
-        error("Arquivo de log", logPath, "nao foi encontrado!")
+        logger.error("Arquivo de log", logPath, "nao foi encontrado!")
         return [""]
 
 #Valida se existe um texto em uma linha, para inumeros parametros
@@ -173,9 +146,9 @@ def startMadMaxPlotter(plots, finalDir, contractAdress):
     try:
         psProcess = subprocess.Popen(commandString)
     except KeyboardInterrupt:
-        warning("\nExecucao interrompida!")
+        logger.warning("Execucao interrompida!")
     except Exception as e:
-        error("\nNao conseguiu plotar!\n",e)
+        logger.error("Nao conseguiu plotar! Exception:\n",e)
         exit()
     #Retorna um dict com as informacoes de criacao de plot do madMax
     return {"psProcess": psProcess, "logName": logName, "created": False}
@@ -195,7 +168,7 @@ def deleteBrokenTempPlots(plotsPath):
         if len(f.split('.plot')) == 2:
             if len(f.split('.tmp')) == 2:
                 deletePath = plotsPath+f
-                debug("\nPlot temp detectado, sera deleteado o arquivo:", deletePath)
+                logger.debug("Plot temp detectado, sera deleteado o arquivo:", deletePath)
                 os.remove(deletePath)
 
 # A partir de um diretorio do arquivo de configuracao, cria um dict de facil acesso com as informacoes daquele diretorio
@@ -229,12 +202,12 @@ def requestReplaceAPI(dirInfos):
             conf.plotReplaceAPI.ignoreFirst = False
             return False
 
-        info("\nEnviando requisicao para replace de plot..")
+        logger.info("Enviando requisicao para replace de plot..")
         while not requestSent:
             try:
                 r = requests.post(plotReplaceAPIUrl, json=dirInfos["jsonDeletePath"], timeout=120)
             except Exception as e:
-                error("\nNao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
+                logger.error("Nao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
             else:
                 requestSent = True
     return requestSent
@@ -261,27 +234,27 @@ def getPlotCountStr(psPlotElem):
     dirInfos = psPlotElem["dirInfo"]
     realPlotCount = getRealTotalPlots(psPlotElem)
     maxPlost = dirInfos["maxPlots"]
-    return ("Valor real da contagem de plots: " + str(realPlotCount) + " | Maximo:" + str(maxPlost))
+    return ("Contagem de plots do diretorio: " + dirInfos["finalPath"] + ". Quantitade atual: " + str(realPlotCount) + " | Maximo:" + str(maxPlost))
 
 # A partir de um elemento da lista psPlotsCreating, inicia a criacao do plot
 def plotCreate(psPlotElem):
     psPlotDirInfo = psPlotElem["dirInfo"]
     #Prints iniciais
-    info("\n=========================================================================================================")
-    info("Iniciando criacao de plot!\n")
-    info(getDirInfosStr(psPlotDirInfo))
+    logger.info("=========================================================================================================")
+    logger.info("Iniciando criacao de plot!\n")
+    logger.info(getDirInfosStr(psPlotDirInfo))
     #Inicia o madMaxPlotter, armazenando o retorno da funcao
     madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
     #Adiciona a lista de processos do elemento de criacao de plots
     psPlotElem["madMaxProcess"].append(madProcess)
     newLogName = madProcess["logName"]
-    info("\nIniciou a criacao do plot", getRealTotalPlots(psPlotElem), "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogName)
+    logger.info("Iniciou a criacao do plot", getRealTotalPlots(psPlotElem), "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogName)
     cntTries = 0
     #Validacao para o output do madMax, somente dando continuidade quando o arquivo de log for criado, provando que o MadMax iniciou, desiste apos 50 tentativas
     while not os.path.isfile(newLogName):
         cntTries += 1
         if cntTries == 50:
-            error("Arquivo de log nao foi encontrado | log:", newLogName)
+            logger.error("Arquivo de log nao foi encontrado | log:", newLogName)
             break
         time.sleep(0.5)
     newLogLines = None
@@ -294,13 +267,14 @@ def plotCreate(psPlotElem):
         newLogLines = readLog(newLogName)
         for line in newLogLines:
             if checktextInStr(line, "Plot Name: "):
-                info(line)
+                logger.info(line)
                 mustBreak = True
                 break
         if cntTries == 50:
             break
     plotsLogsHistory[madProcess["logName"]] = newLogLines
-    info("=========================================================================================================\n\nPlot em criacao...")
+    logger.info("=========================================================================================================")
+    logger.info("Plot em criacao...")
     return True
 
 #Valida qual diretorio ira iniciar a nova criacao de plot e inicia
@@ -329,7 +303,7 @@ def psPlotCreatingRemoveAll():
         for madProcess in psPlot["madMaxProcess"]:
             psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
 
-debug("Ira iniciar agora!\nConfiguracao definida:\n", conf.values())
+logger.debug("Ira iniciar agora!\nConfiguracao definida:\n", conf.values())
 
 try:
     # Deleta diretorios temporarios, antes de iniciar a execucao
@@ -344,15 +318,15 @@ try:
         if getPlotsCount(dir["path"]) < dir["maxPlots"]:
             psElem = {"dirInfo": dirInfo, "madMaxProcess": []}
             psPlotsCreating.append(psElem)
-            debug("\nElemento adicionado para criacao:")
-            debug(getDirInfosStr(dirInfo))
-            debug(getPlotCountStr(psElem))
+            logger.debug("Elemento adicionado para criacao:")
+            logger.debug(getDirInfosStr(dirInfo))
+            logger.debug(getPlotCountStr(psElem))
         else:
-            info("\n=========================================================================================================")
-            info("\nNao sera necessaria a criacao de plots para o dir:")
-            info(getDirInfosStr(dirInfo))
-            info("\nO numero maximo de plots ja foi atingido!")
-            info("\n=========================================================================================================")
+            logger.info("=========================================================================================================")
+            logger.info("Nao sera necessaria a criacao de plots para o dir:")
+            logger.info(getDirInfosStr(dirInfo))
+            logger.info("O numero maximo de plots ja foi atingido!")
+            logger.info("=========================================================================================================")
 
     #Inicia a criacao do primeiro plot, se nao criar, finaliza o programa, ja que todos os diretorios estao cheios e nao sera necessario criar plots
     if not newPlot():
@@ -363,7 +337,6 @@ try:
         for psPlot in psPlotsCreating:
             #Valida se para o elemento da lista, existem plots em criacao atraves da lista que controla processo do madMax
             if len(psPlot["madMaxProcess"]) > 0:
-                dirInfo = psPlot["dirInfo"]
                 #Itera sobre todos os processos em andamento na lista
                 for madProcess in psPlot["madMaxProcess"]:
                     log = madProcess["logName"]
@@ -374,44 +347,44 @@ try:
                             for line in logLines:
                                 #Somente valida linhas novas do arquivo de log, evitando reprocessamento desnecessario
                                 if line not in plotsLogsHistory[log]:
-                                    debug("\nNova linha detectada no log:", line)
+                                    logger.debug("MadMax:", line)
                                     #Print caso o log seja sobre a finalizacao de uma das fases do MadMax
                                     if checktextInStr(line, "Phase ", " took "):
-                                        info("\n" + line)
+                                        logger.info(line)
                                     #Valida atraves do atributo de criacao de log se o log ainda esta sendo criado
                                     elif not madProcess["created"]:
                                         #Checka atraves da mensagem se o log foi criado, caso sim, print da finalizacao, deleta um plot antigo e inicia outra criacao de plot
                                         if checktextInStr(line, "Total plot creation time"):
-                                            info("\n" + line,"| log:", log)
+                                            logger.info(line,"| log:", log)
                                             madProcess["created"] = True
-                                            if requestReplaceAPI(dirInfo):
-                                                info("\nResposta com sucesso para replace de plots antigos!")
+                                            if requestReplaceAPI(psPlot["dirInfo"]):
+                                                logger.info("Resposta com sucesso para replace de plots antigos!")
                                             newPlot()
-                                            break
+                                            continue
                                     #Caso seja um plot ja criado, valida se a copia do arquivo foi terminada, caso sim, elimina o elemento da lista de processos do madMax
                                     elif checktextInStr(line, "Copy to", "finished, took"):
-                                        info("\n" + line,"| log:", log)
+                                        logger.info(line, "| log:", log)
                                         psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
                                         break
                             #Adiciona as novas linhas de log ao historico, apos o processamento finalizar
                             plotsLogsHistory[log] = logLines
             #Se o primeiro if, disser que a lista de processos do madMax esta vazia, ira validar para que remova da lista de criacao de plots caso nao seja possivel criar novos plots para o diretorio em questao
             elif not canCreatePlot(psPlot):
-                info("\n=========================================================================================================")
-                info("\nCriacao de plots finalizada para:")
-                info(getDirInfosStr(dirInfo))
+                logger.info("=========================================================================================================")
+                logger.info("Criacao de plots finalizada para:")
+                logger.info(getDirInfosStr(psPlot["dirInfo"]))
                 psPlotsCreating.remove(psPlot)
-                info("\n=========================================================================================================")
+                logger.info("=========================================================================================================")
         
         #Caso nao exista elementos para criacao de plots, finaliza o loop, partindo para o fim do programa
         if len(psPlotsCreating) == 0:
-            info("\n---------------------------------------------------------------------------------------------------------")
-            info("\nCriacao de plots finalizada para todos os diretorios!\n\nO programa ira finalizar em breve!")
-            info("\n---------------------------------------------------------------------------------------------------------")
+            logger.info("---------------------------------------------------------------------------------------------------------")
+            logger.info("Criacao de plots finalizada para todos os diretorios!\n\nO programa ira finalizar em breve!")
+            logger.info("---------------------------------------------------------------------------------------------------------")
             break
         time.sleep(5)
 except KeyboardInterrupt:
-    warning("\nExecucao interrompida!")
+    logger.warning("Execucao interrompida!")
 
 # Caso tudo tenha corrido bem, finaliza o programa
 exit()
