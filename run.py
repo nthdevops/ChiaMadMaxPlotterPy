@@ -162,7 +162,7 @@ def getPlotsCount(plotsPath):
                 if not len(f.split('.tmp')) == 2:
                     totalPlots +=1
     else:
-        logger.debug("A contagem de plots falhou pois o diretorio", plotsPath, "nao existe!! A execucao sera abortada!")
+        logger.error("A contagem de plots falhou pois o diretorio", plotsPath, "nao existe!! A execucao sera abortada!")
         exit()
     return totalPlots
 
