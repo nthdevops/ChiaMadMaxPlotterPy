@@ -156,10 +156,14 @@ def startMadMaxPlotter(plots, finalDir, contractAdress):
 #Conta o total de plots no diretorio
 def getPlotsCount(plotsPath):
     totalPlots = 0
-    for f in os.listdir(plotsPath):
-        if len(f.split('.plot')) == 2:
-            if not len(f.split('.tmp')) == 2:
-                totalPlots +=1
+    if os.path.exists(plotsPath):
+        for f in os.listdir(plotsPath):
+            if len(f.split('.plot')) == 2:
+                if not len(f.split('.tmp')) == 2:
+                    totalPlots +=1
+    else:
+        logger.debug("A contagem de plots falhou pois o diretorio", plotsPath, "nao existe!! A execucao sera abortada!")
+        exit()
     return totalPlots
 
 #Se existir um arquivo .plot.temp ira deleta-lo
