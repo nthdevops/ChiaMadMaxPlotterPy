@@ -5,20 +5,11 @@
         {
             "path": "Diretorio Final terminado com\\",
             "maxPlots": "Numero maximo de plots para este diretorio final. ESCREVER O NUMERO SEM AS ASPAS" Exemplo: 5,
-            "nftAddress": "Chave NFT da pool",
-            "replaceOldPlots": {
-                "enabled": true ou false,
-                "deletePath": "Defina o valor do diretorio dos plots antigos para deletar, caso o parametro acima esteja true, se nao ira criar os plots sem deletar antigos"
-            }
+            "nftAddress": "Chave NFT da pool"
         }
     ],
     "farmerKey": "Farmer Public Key",
     "logsPath": "Diretorio para os logs do MadMax",
     "loglevel": "info" OU "debug",
-    "plotReplaceAPI": {
-        "host": "host para a API de controle para deletar plots",
-        "port": "porta para a API de controle para deletar plots",
-        "ignoreFirst": true/false para nao substituir o primeiro plot a ser criado (Usado caso seja necessario reiniciar o script por erros de execucao)
-    },
     "deleteTempBeforeStart": true/false, ira deletar arquivos .plot.temp que podem ter ficado de resquicios de outra plotagem nao finalizada
 }

@@ -1,4 +1,4 @@
-import psutil, os, atexit, shutil, subprocess, requests, time, jsonConf, sys
+import psutil, os, atexit, shutil, subprocess, time, jsonConf, sys, signal
 from sys import exit
 from datetime import datetime
 from customLogs import *
@@ -30,9 +30,6 @@ endString = "Programa finalizado!\nBye Bye :)\n"
 #Plotting control
 psPlotsCreating = []
 plotsLogsHistory = {}
-
-#API Conf
-plotReplaceAPIUrl = "http://"+conf.plotReplaceAPI.host+":"+conf.plotReplaceAPI.port+"/addPlotToDelete"
 
 #Funcao para remover os diretorios temporarios
 def removeTempDirs():
@@ -180,41 +177,17 @@ def getPlotDirInfos(dir):
     finalPath = dir["path"]
     maxPlots = int(dir["maxPlots"])
     nftAddress = dir["nftAddress"]
-    replaceOldPlotsEnabled = dir["replaceOldPlots"]["enabled"]
-    replaceOldPlotsDeletePath = dir["replaceOldPlots"]["deletePath"]
-    jsonDeletePath = {"deletePath": replaceOldPlotsDeletePath}
     
     dirInfos = {}
     dirInfos["finalPath"] = finalPath
     dirInfos["maxPlots"] = maxPlots
     dirInfos["nftAddress"] = nftAddress
-    dirInfos["replaceOldPlotsEnabled"] = replaceOldPlotsEnabled
-    dirInfos["replaceOldPlotsDeletePath"] = replaceOldPlotsDeletePath
-    dirInfos["jsonDeletePath"] = jsonDeletePath
     return dirInfos
 
 #Retorna uma string com as infos do diretorio
 def getDirInfosStr(dirInfos):
-    returnStr = "Path final: " + str(dirInfos["finalPath"]) + "\nMax Plots: " + str(dirInfos["maxPlots"]) + "\nNFT Singleton: " + str(dirInfos["nftAddress"]) + "\nSubstituir plots antigos: " + str(dirInfos["replaceOldPlotsEnabled"]) + "\nDiretorio plots antigos: " + str(dirInfos["replaceOldPlotsDeletePath"])
+    returnStr = "Path final: " + str(dirInfos["finalPath"]) + "\nMax Plots: " + str(dirInfos["maxPlots"]) + "\nNFT Singleton: " + str(dirInfos["nftAddress"])
     return returnStr
-
-# Requisita para a API de substituicao de plots a partir das infos de diretorio da funcao getPlotDirInfos
-def requestReplaceAPI(dirInfos):
-    requestSent = False
-    if dirInfos["replaceOldPlotsEnabled"]:
-        if conf.plotReplaceAPI.ignoreFirst:
-            conf.plotReplaceAPI.ignoreFirst = False
-            return False
-
-        logger.info("Enviando requisicao para replace de plot..")
-        while not requestSent:
-            try:
-                r = requests.post(plotReplaceAPIUrl, json=dirInfos["jsonDeletePath"], timeout=120)
-            except Exception as e:
-                logger.error("Nao foi possivel requisitar para a API, verifique possiveis problemas. Excecao:\n", e)
-            else:
-                requestSent = True
-    return requestSent
 
 #Retorna o total de plots no diretorio + os plots em criacao
 def getRealTotalPlots(psPlotElem):
@@ -307,8 +280,6 @@ def psPlotCreatingRemoveAll():
         for madProcess in psPlot["madMaxProcess"]:
             psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
 
-logger.debug("Ira iniciar agora!\nConfiguracao definida:\n", conf.values())
-
 try:
     # Deleta diretorios temporarios, antes de iniciar a execucao
     removeTempDirs()
@@ -360,8 +331,6 @@ try:
                                         if checktextInStr(line, "Started copy to "):
                                             logger.info(line,"| log:", log)
                                             madProcess["created"] = True
-                                            if requestReplaceAPI(psPlot["dirInfo"]):
-                                                logger.info("Resposta com sucesso para replace de plots antigos!")
                                             newPlot()
                                             continue
                                         else:
