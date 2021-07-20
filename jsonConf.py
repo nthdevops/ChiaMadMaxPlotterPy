@@ -1,4 +1,5 @@
-import json
+import json, os
+from sys import exit
 
 class Configuration(dict):
     def __init__(self, *args):
@@ -28,6 +29,10 @@ class Configuration(dict):
 
 
 def getConf(filename):
+    if not os.path.isfile("./"+filename):
+        print("Arquivo", filename, "nao foi encontrado\nValide se o script foi iniciado no diretorio do arquivo de configuracao!")
+        input("Pressione 'Enter' para sair...")
+        exit()
     with open(filename, 'r') as f:
         confjson = Configuration(json.loads(f.read()))
 

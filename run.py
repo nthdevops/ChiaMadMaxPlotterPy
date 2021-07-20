@@ -170,7 +170,12 @@ def deleteBrokenTempPlots(plotsPath):
             if len(f.split('.tmp')) == 2:
                 deletePath = plotsPath+f
                 logger.debug("Plot temp detectado, sera deleteado o arquivo:", deletePath)
-                os.remove(deletePath)
+                try:
+                    os.remove(deletePath)
+                except:
+                    logger.debug("Nao foi possivel deletar o plot:", deletePath)
+                else:
+                    logger.debug("Plot temp deletado:", deletePath)
 
 # A partir de um diretorio do arquivo de configuracao, cria um dict de facil acesso com as informacoes daquele diretorio
 def getPlotDirInfos(dir):
