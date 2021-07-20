@@ -29,7 +29,7 @@ class Configuration(dict):
 
 
 def getConf(filename):
-    if not os.path.isfile("./"+filename):
+    if not os.path.isfile(filename):
         print("Arquivo", filename, "nao foi encontrado\nValide se o script foi iniciado no diretorio do arquivo de configuracao!")
         input("Pressione 'Enter' para sair...")
         exit()
