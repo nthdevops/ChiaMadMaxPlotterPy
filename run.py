@@ -1,4 +1,4 @@
-import psutil, os, atexit, shutil, subprocess, time, jsonConf, sys, signal
+import psutil, os, atexit, shutil, subprocess, time, jsonConf, sys
 from sys import exit
 from datetime import datetime
 from customLogs import *
