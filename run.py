@@ -351,25 +351,28 @@ try:
                             for line in logLines:
                                 #Somente valida linhas novas do arquivo de log, evitando reprocessamento desnecessario
                                 if line not in plotsLogsHistory[log]:
-                                    logger.debug("MadMax:", line)
                                     #Print caso o log seja sobre a finalizacao de uma das fases do MadMax
                                     if checktextInStr(line, "Phase ", " took "):
                                         logger.info(line)
                                     #Valida atraves do atributo de criacao de log se o log ainda esta sendo criado
                                     elif not madProcess["created"]:
                                         #Checka atraves da mensagem se o log foi criado, caso sim, print da finalizacao, deleta um plot antigo e inicia outra criacao de plot
-                                        if checktextInStr(line, "Total plot creation time"):
+                                        if checktextInStr(line, "Started copy to "):
                                             logger.info(line,"| log:", log)
                                             madProcess["created"] = True
                                             if requestReplaceAPI(psPlot["dirInfo"]):
                                                 logger.info("Resposta com sucesso para replace de plots antigos!")
                                             newPlot()
                                             continue
+                                        else:
+                                            logger.debug("MadMax:", line)
                                     #Caso seja um plot ja criado, valida se a copia do arquivo foi terminada, caso sim, elimina o elemento da lista de processos do madMax
                                     elif checktextInStr(line, "Copy to", "finished, took"):
                                         logger.info(line, "| log:", log)
                                         psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
                                         break
+                                    else:
+                                        logger.debug("MadMax:", line)
                             #Adiciona as novas linhas de log ao historico, apos o processamento finalizar
                             plotsLogsHistory[log] = logLines
             #Se o primeiro if, disser que a lista de processos do madMax esta vazia, ira validar para que remova da lista de criacao de plots caso nao seja possivel criar novos plots para o diretorio em questao
