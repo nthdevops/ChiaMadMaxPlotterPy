@@ -191,7 +191,7 @@ def getPlotDirInfos(dir):
 
 #Retorna uma string com as infos do diretorio
 def getDirInfosStr(dirInfos):
-    returnStr = "Path final: " + str(dirInfos["finalPath"]) + "\nMax Plots: " + str(dirInfos["maxPlots"]) + "\nNFT Singleton: " + str(dirInfos["nftAddress"])
+    returnStr = "Path final: " + str(dirInfos["finalPath"]) + " - Max Plots: " + str(dirInfos["maxPlots"]) + " - NFT Singleton: " + str(dirInfos["nftAddress"])
     return returnStr
 
 #Retorna o total de plots no diretorio + os plots em criacao
@@ -216,14 +216,14 @@ def getPlotCountStr(psPlotElem):
     dirInfos = psPlotElem["dirInfo"]
     realPlotCount = getRealTotalPlots(psPlotElem)
     maxPlost = dirInfos["maxPlots"]
-    return ("Contagem de plots do diretorio: " + dirInfos["finalPath"] + ". Quantitade atual: " + str(realPlotCount) + " | Maximo:" + str(maxPlost))
+    return ("Contagem de plots - " + "Quantitade atual: " + str(realPlotCount) + " | Maximo:" + str(maxPlost))
 
 # A partir de um elemento da lista psPlotsCreating, inicia a criacao do plot
 def plotCreate(psPlotElem):
     psPlotDirInfo = psPlotElem["dirInfo"]
     #Prints iniciais
     logger.info("=========================================================================================================")
-    logger.info("Iniciando criacao de plot!\n")
+    logger.info("Iniciando criacao de plot:")
     logger.info(getDirInfosStr(psPlotDirInfo))
     #Inicia o madMaxPlotter, armazenando o retorno da funcao
     madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
@@ -298,9 +298,11 @@ try:
         if getPlotsCount(dir["path"]) < dir["maxPlots"]:
             psElem = {"dirInfo": dirInfo, "madMaxProcess": []}
             psPlotsCreating.append(psElem)
+            logger.debug("=========================================================================================================")
             logger.debug("Elemento adicionado para criacao:")
             logger.debug(getDirInfosStr(dirInfo))
             logger.debug(getPlotCountStr(psElem))
+            logger.debug("=========================================================================================================")
         else:
             logger.info("=========================================================================================================")
             logger.info("Nao sera necessaria a criacao de plots para o dir:")
