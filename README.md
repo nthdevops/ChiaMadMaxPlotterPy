@@ -64,3 +64,6 @@
 - [Script de substituição de plots antigos](https://github.com/nthdevops/oldPlotsReplacer)
 #
 ##### Donate XCH: xch1dp7urpgy6uafhxnt305pj8hq2nqkdasycgrmnmwwtnc2542lnrvsdanazj
+#
+### Faça download:
+- [Releases](https://github.com/nthdevops/ChiaMadMaxPlotterPy/releases)
