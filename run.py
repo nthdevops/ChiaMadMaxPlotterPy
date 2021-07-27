@@ -119,7 +119,7 @@ try:
         #Cria o plot name para tempDirs e logs a partir do horario de criacao
         now = datetime.now()
         plotName = "plot_"+now.strftime("%d_%m_%Y__%H-%M-%S")
-        logName = conf.logsPath+plotName+".log"
+        logPath = conf.logsPath+plotName+".log"
         tempDir1 = conf.tempDir+plotName+"Temp1\\"
         tempDir2 = conf.tempDir+plotName+"Temp2\\"
         createTempDir(tempDir1)
@@ -129,8 +129,14 @@ try:
         if(totalThreads < 0):
             totalThreads = psutil.cpu_count()
 
-        commandString = 'powershell \".\chia_plot.exe -n \'' + str(plots) +'\' -r \'' + str(totalThreads) + '\' -t \'' + tempDir1 + '\' -2 \'' + tempDir2 + '\' -d \'' + str(finalDir) + '\' -c \'' + str(contractAdress) + '\' -f \'' + conf.farmerKey + '\' | Out-File \'' + logName + '\' -Encoding UTF8\"'
-
+        commandString = 'powershell \".\chia_plot.exe -n \'' + str(plots) +'\' -r \'' + str(totalThreads) + '\' -t \'' + tempDir1 + '\' -2 \'' + tempDir2 + '\' -d \'' + str(finalDir) + '\' -c \'' + str(contractAdress) + '\' -f \'' + conf.farmerKey + "\'"
+        commandStringEnd = ' | Out-File \'' + logPath + '\' -Encoding UTF8\"'
+        madMaxOptArgs = conf.madMaxOptionalArgs
+        for key, val in madMaxOptArgs.items():
+            if val != "default":
+                if key != "waitforcopy":
+                    commandString += " --" + key + " \'" + str(val) + "\'"
+        commandString += commandStringEnd
         psProcess = None
         try:
             psProcess = subprocess.Popen(commandString)
@@ -138,7 +144,7 @@ try:
             logger.error("Nao conseguiu plotar! Exception:\n",e)
             exit()
         #Retorna um dict com as informacoes de criacao de plot do madMax
-        return {"psProcess": psProcess, "logName": logName, "created": False}
+        return {"psProcess": psProcess, "logPath": logPath, "created": False}
 
     #Conta o total de plots no diretorio
     def getPlotsCount(plotsPath):
@@ -219,14 +225,14 @@ try:
         madProcess = startMadMaxPlotter(1, psPlotDirInfo["finalPath"], psPlotDirInfo["nftAddress"])
         #Adiciona a lista de processos do elemento de criacao de plots
         psPlotElem["madMaxProcess"].append(madProcess)
-        newLogName = madProcess["logName"]
-        logger.info("Iniciou a criacao do plot", getRealTotalPlots(psPlotElem), "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogName)
+        newLogPath = madProcess["logPath"]
+        logger.info("Iniciou a criacao do plot", getRealTotalPlots(psPlotElem), "de", psPlotElem["dirInfo"]["maxPlots"], "| Arquivo de log:", newLogPath)
         cntTries = 0
         #Validacao para o output do madMax, somente dando continuidade quando o arquivo de log for criado, provando que o MadMax iniciou, desiste apos 50 tentativas
-        while not os.path.isfile(newLogName):
+        while not os.path.isfile(newLogPath):
             cntTries += 1
             if cntTries == 50:
-                logger.error("Arquivo de log nao foi encontrado | log:", newLogName)
+                logger.error("Arquivo de log nao foi encontrado | log:", newLogPath)
                 break
             time.sleep(0.5)
         newLogLines = None
@@ -236,7 +242,7 @@ try:
         while not mustBreak:
             time.sleep(0.5)
             cntTries += 1
-            newLogLines = readLog(newLogName)
+            newLogLines = readLog(newLogPath)
             for line in newLogLines:
                 if checktextInStr(line, "Plot Name: "):
                     logger.info(line)
@@ -244,7 +250,7 @@ try:
                     break
             if cntTries == 50:
                 break
-        plotsLogsHistory[madProcess["logName"]] = newLogLines
+        plotsLogsHistory[madProcess["logPath"]] = newLogLines
         logger.info("=========================================================================================================")
         logger.info("Plot em criacao...")
         return True
@@ -266,7 +272,7 @@ try:
             madProcess["psProcess"].terminate()
         except:
             pass
-        plotsLogsHistory.pop(madProcess["logName"], None)
+        plotsLogsHistory.pop(madProcess["logPath"], None)
         psMadMaxProcess.remove(madProcess)
 
     # Remove todos os elementos da lista de plots em criacao
@@ -319,7 +325,7 @@ try:
             if len(psPlot["madMaxProcess"]) > 0:
                 #Itera sobre todos os processos em andamento na lista
                 for madProcess in psPlot["madMaxProcess"]:
-                    log = madProcess["logName"]
+                    log = madProcess["logPath"]
                     logLines = readLog(log)
                     if logLines != None:
                         #So entra nas validacoes se o log foi alterado, caso esteja igual ao historico, nao realiza nenhuma acao
@@ -336,13 +342,16 @@ try:
                                         if checktextInStr(line, "Started copy to "):
                                             logger.info(line,"| log:", log)
                                             madProcess["created"] = True
-                                            newPlot()
+                                            if conf.madMaxOptionalArgs.waitforcopy == "default":
+                                                newPlot()
                                             continue
                                         else:
                                             logger.debug("MadMax:", line)
                                     #Caso seja um plot ja criado, valida se a copia do arquivo foi terminada, caso sim, elimina o elemento da lista de processos do madMax
                                     elif checktextInStr(line, "Copy to", "finished, took"):
                                         logger.info(line, "| log:", log)
+                                        if conf.madMaxOptionalArgs.waitforcopy != "default":
+                                            newPlot()
                                         psPlotCreatingRemove(psPlot["madMaxProcess"], madProcess)
                                         break
                                     else:

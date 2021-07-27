@@ -16,6 +16,13 @@
 {
     "threads": (-1 para todas as threads do sistema ou o valor que desejar, Exemplo: 4),
     "tempDir": "TempDir terminado com\\",
+    "farmerKey": "Farmer Public Key",
+    "madMaxOptionalArgs": {
+        "buckets": "default", (Ira definir o numero de buckets utilizados para criacao de plots, deixe o parametro como "default" para nao alterar o valor padrao que o madMax usa, para utilizar, insira o numero de buckets sem aspas, exemplo: 512)
+        "buckets3": "default", (Ira definir o numero de buckets utilizados para criacao de plots na fase 3 e 4, deixe o parametro como "default" para nao alterar o valor padrao que o madMax usa, para utilizar, insira o numero de buckets sem aspas, exemplo: 512)
+        "waitForCopy": "default", (Utilizado para esperar para a copia de um plot antes de iniciar um novo, caso queira alterar para esperar, mude de "default" para "yes" para habilitar)
+        "rMulti2": "default" (Multiplicador de threads para a fase 2, deixe como "default" para nao alterar ou coloque o numero que deseja multiplicar sem aspas para utilizar, exemplo: 2)
+    },
     "finalDirs": [
         {
             "path": "Diretorio Final terminado com\\",
@@ -23,7 +30,6 @@
             "nftAddress": "Chave NFT da pool"
         }
     ],
-    "farmerKey": "Farmer Public Key",
     "logsPath": "Diretorio para os logs do MadMax",
     "loglevel": "info" OU "debug",
     "deleteTempBeforeStart": true/false, ira deletar arquivos .plot.temp que podem ter ficado de resquicios de outra plotagem nao finalizada
@@ -36,6 +42,13 @@
 {
     "threads": -1,
     "tempDir": "C:\\Users\\USER\\Chia\\TempPlots\\",
+    "farmerKey": "farmerKey",
+    "madMaxOptionalArgs": {
+        "buckets": "default",
+        "buckets3": "default",
+        "waitforcopy": "default",
+        "rmulti2": "default"
+    },
     "finalDirs": [
         {
             "path": "C:\\Users\\USER\\Chia\\ChiaNFTPlots\\",
@@ -48,7 +61,6 @@
             "nftAddress": "xchSINGLETON"
         }
     ],
-    "farmerKey": "farmerKey",
     "logsPath": "C:\\Users\\USER\\Chia\\logs\\",
     "loglevel": "info",
     "deleteTempBeforeStart": true
