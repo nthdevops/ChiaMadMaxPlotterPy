@@ -5,8 +5,8 @@
     "madMaxOptionalArgs": {
         "buckets": "default", (Ira definir o numero de buckets utilizados para criacao de plots, deixe o parametro como "default" para nao alterar o valor padrao que o madMax usa, para utilizar, insira o numero de buckets sem aspas, exemplo: 512)
         "buckets3": "default", (Ira definir o numero de buckets utilizados para criacao de plots na fase 3 e 4, deixe o parametro como "default" para nao alterar o valor padrao que o madMax usa, para utilizar, insira o numero de buckets sem aspas, exemplo: 512)
-        "waitForCopy": "default", (Utilizado para esperar para a copia de um plot antes de iniciar um novo, caso queira alterar para esperar, mude de "default" para "yes" para habilitar)
-        "rMulti2": "default" (Multiplicador de threads para a fase 2, deixe como "default" para nao alterar ou coloque o numero que deseja multiplicar sem aspas para utilizar, exemplo: 2)
+        "waitforcopy": "default", (Utilizado para esperar para a copia de um plot antes de iniciar um novo, caso queira alterar para esperar, mude de "default" para "yes" para habilitar)
+        "rmulti2": "default" (Multiplicador de threads para a fase 2, deixe como "default" para nao alterar ou coloque o numero que deseja multiplicar sem aspas para utilizar, exemplo: 2)
     },
     "finalDirs": [
         {
